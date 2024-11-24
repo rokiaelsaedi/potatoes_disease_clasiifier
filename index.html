@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+            background-image: url('im.webp'); /* Replace with your image path */
+            background-size: cover;  /* Ensures the image covers the entire background */
+            background-position: center;  /* Centers the image */
+            background-repeat: no-repeat;  /* Prevents the image from repeating */
+        }
+
+        .dropzone {
+            border: 2px dashed brown;
+            padding: 50px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            cursor: pointer;
+             /* Makes the dropzone background semi-transparent */
+        }
+
+        .dropzone:hover {
+            background-color: burlywood; /* Slightly darker on hover */
+        }
+
+        .output {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        #prediction {
+            font-weight: bold;
+            color: whitesmoke;
+        }
+        #confidence {
+            font-weight: bold;
+            color: white;  /* White text color for confidence */
+            font-size: 18px;}
+
+        #image-preview {
+            margin-top: 20px;
+            max-width: 100%;
+            max-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Potatoes Disease Classifier</h1>
+    <div class="dropzone" id="dropzone">
+        <p>Drag & Drop an Image Here</p>
+        <p>or</p>
+        <input type="file" id="fileInput" style="display:none;">
+        <button onclick="document.getElementById('fileInput').click()">Choose File</button>
+    </div>
+
+    <!-- Image preview container -->
+    <div id="image-preview-container"></div>
+
+    <div class="output">
+        <div id="prediction"></div>
+        <div id="confidence"></div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const predictionDiv = document.getElementById('prediction');
+        const confidenceDiv = document.getElementById('confidence');
+
+        // Handle drag and drop
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.backgroundColor = '#ecf0f1';
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.backgroundColor = 'transparent';
+        });
+
+        dropzone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropzone.style.backgroundColor = 'transparent';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                // Display the image preview
+                displayImage(file);
+                await makePrediction(file);
+            }
+        });
+
+        // Handle file input
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (file) {
+                // Display the image preview
+                displayImage(file);
+                await makePrediction(file);
+            }
+        });
+
+        // Function to display image preview
+        function displayImage(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = document.createElement('img');
+                img.src = event.target.result;
+                img.id = "image-preview";  // Assign an id for styling or further manipulation
+                imagePreviewContainer.innerHTML = '';  // Clear any existing image
+                imagePreviewContainer.appendChild(img);  // Append the new image
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Function to make prediction
+        async function makePrediction(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch('http://localhost:8000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                displayPrediction(result);
+            } catch (error) {
+                alert("Error: " + error.message);
+            }
+        }
+
+        // Display prediction
+        function displayPrediction(result) {
+            predictionDiv.innerText = `Predicted Class: ${result.class}`;
+            confidenceDiv.innerText = `Confidence: ${(result.confidence * 100).toFixed(2)}%`;
+        }
+    </script>
+</body>
+</html>
